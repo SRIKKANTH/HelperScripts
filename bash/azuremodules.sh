@@ -615,7 +615,9 @@ function InstallDocker()
 
 function stop_and_remove_all_containers()
 (
+    echo "Info: Stopping all containers" | LogMsg
     docker stop $(docker ps -a -q)
+    echo "Info: Removing all containers" | LogMsg
     docker rm $(docker ps -a -q)
 )
 
