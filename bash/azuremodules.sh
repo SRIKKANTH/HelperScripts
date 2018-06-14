@@ -20,6 +20,21 @@ function UpdateStatus ()
 	tee > $StatusFile
 }
 
+function check_exit_status ()
+{
+    exit_status=$?
+    message=$1
+
+    if [ $exit_status -ne 0 ]; then
+        echo "$message: Failed (exit code: $exit_status)"
+        if [ "$2" == "exit" ]
+        then
+            exit $exit_status
+        fi
+    else
+        echo "$message: Success"
+    fi
+}
 
 function get_lis_version ()
 {
@@ -36,20 +51,9 @@ function get_host_version ()
     dmesg | grep "Host Build" | sed "s/.*Host Build://"| awk '{print  $1}'| sed "s/;//"
 }
 
-function check_exit_status ()
+function get_one_ip()
 {
-    exit_status=$?
-    message=$1
-
-    if [ $exit_status -ne 0 ]; then
-        echo "$message: Failed (exit code: $exit_status)"
-        if [ "$2" == "exit" ]
-        then
-            exit $exit_status
-        fi
-    else
-        echo "$message: Success"
-    fi
+    ifconfig eth0 | grep "inet addr:"| awk '{print  $2}'| sed 's/addr://'
 }
 
 function detect_linux_ditribution_version()
