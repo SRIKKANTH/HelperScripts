@@ -1,0 +1,68 @@
+{
+    "selectedContainer" : {
+        "name":"mariadb",
+        "version":"10.2"
+    }, 
+    "ContainerInfo" : {
+		"influxdb" : {
+			"ApplicationParameters" : {
+				"ContainerPorts" : [8086],
+				"ContainerUser" : ["DbEngineUserId"],
+				"FluentdlogOptions" : {"tag" : "influxdblog"},
+				"DBLogConfigType" : "fluentd",
+				"HealthUrl" : "api/Db/Health",
+				"AdminCreationUrl" : "api/Db/User/CreateOrUpdate",
+				"ContainerBindMounts" : ["/datadrive:/var/lib/influxdb"]
+			},
+			"1.5.3" :  {
+				"ApplicationName" : "influxdb",
+				"ApplicationVersion" : "1.5.3",
+				"ApplicationDependencies" : [
+					{
+						"SIDECARNAME" : "vmagentinfluxdbsidecar",
+						"SIDECARIMAGE" : "orcas/vmagentinfluxdbsidecar",
+						"SIDECARVER" : "radh"
+					}
+				]
+			}
+		},
+		"vmagentinfluxdbsidecar" : {
+			"ApplicationParameters" : {
+				"ContainerPorts" : [5001],
+				"ContainerUser" : ["DbEngineUserId"],
+				"FluentdlogOptions" : {"tag" : "influxdblog"},
+				"DBLogConfigType" : "fluentd",
+				"HealthUrl" : "api/Db/Health",
+				"AdminCreationUrl" : "api/Db/User/CreateOrUpdate",
+				"ContainerBindMounts" : [""]
+			},
+			"radh" :  {
+				"ApplicationName" : "orcas/mariadb_with_launcher",
+				"ApplicationVersion" : "1.5.3",
+				"ApplicationDependencies" : []
+			}
+		},
+		"mariadb" : {
+			"ApplicationParameters" : {
+				"ContainerPorts" : [3306],
+				"ContainerUser" : ["DbEngineUserId"],
+				"FluentdlogOptions" : {"tag" : "mariadblog"},                    
+				"DBLogConfigType" : "fluentd",
+				"HealthUrl" : "api/Db/Health",
+				"AdminCreationUrl" : "api/Db/User/CreateOrUpdate",
+				"ContainerBindMounts" : ["/datadrive:/var/lib/influxdb"]
+			},
+			"10.2" :  {
+				"ApplicationName" : "orcas/mariadb_with_launcher",
+				"ApplicationVersion" : "10.2-20180510-2",
+				"ApplicationDependencies" : [
+						{
+							"SIDECARNAME" : "vmagentmariadbsidecar",
+							"SIDECARIMAGE" : "orcas/vmagentmariadbsidecar",
+							"SIDECARVER" : "20180601-1"
+						}
+				]
+			}
+		}
+	} 
+}
