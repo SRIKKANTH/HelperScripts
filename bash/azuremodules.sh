@@ -616,13 +616,68 @@ function InstallDocker()
 function stop_and_remove_all_containers()
 (
     echo "Info: Stopping all containers" | LogMsg
-    docker stop $(docker ps -a -q)
+    docker stop $(docker ps -a -q)  | LogMsg
     echo "Info: Removing all containers" | LogMsg
-    docker rm $(docker ps -a -q)
+    docker rm $(docker ps -a -q)  | LogMsg
 )
 
 function remove_all_images()
 (
-    docker rmi $(docker images -a -q)
+    docker rmi $(docker images -a -q)  | LogMsg
 )
 
+
+function CreatePostgresBdrImage()
+{
+cat >Dockerfile <<EOL
+FROM ubuntu:16.04
+
+RUN echo "deb http://azure.archive.ubuntu.com/ubuntu/ xenial main restricted"  > /etc/apt/sources.list
+RUN echo "deb http://azure.archive.ubuntu.com/ubuntu/ xenial-updates main restricted" >> /etc/apt/sources.list
+RUN echo "deb http://azure.archive.ubuntu.com/ubuntu/ xenial universe" >> /etc/apt/sources.list
+RUN echo "deb http://azure.archive.ubuntu.com/ubuntu/ xenial-updates universe" >> /etc/apt/sources.list
+RUN echo "deb http://azure.archive.ubuntu.com/ubuntu/ xenial multiverse" >> /etc/apt/sources.list
+RUN echo "deb http://azure.archive.ubuntu.com/ubuntu/ xenial-updates multiverse" >> /etc/apt/sources.list
+RUN echo "deb http://azure.archive.ubuntu.com/ubuntu/ xenial-backports main restricted universe multiverse" >> /etc/apt/sources.list
+RUN echo "deb http://security.ubuntu.com/ubuntu xenial-security main restricted" >> /etc/apt/sources.list
+RUN echo "deb http://security.ubuntu.com/ubuntu xenial-security universe" >> /etc/apt/sources.list
+RUN echo "deb http://security.ubuntu.com/ubuntu xenial-security multiverse" >> /etc/apt/sources.list
+
+RUN apt-get update
+RUN apt-get install openssh-server unzip curl apt-transport-https ca-certificates -y
+
+RUN sh -c 'echo "deb https://apt.2ndquadrant.com/ $(cat /etc/*release*| grep DISTRIB_CODENAME| sed 's/^.*=//')-2ndquadrant main" > /etc/apt/sources.list.d/2ndquadrant.list'
+RUN curl https://apt.2ndquadrant.com/site/keys/9904CD4BD6BAF0C3.asc | apt-key add -
+
+RUN apt-get update
+RUN apt-get install -y postgresql-bdr-9.4-bdr-plugin
+
+RUN mkdir /datadrive
+RUN mkdir /var/run/sshd
+
+RUN echo 'root:screencast' | chpasswd
+RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+ENV NOTVISIBLE "in users profile"
+RUN echo "export VISIBLE=now" >> /etc/profile
+EXPOSE 22
+
+RUN /usr/sbin/locale-gen --purge en_US.UTF-8
+RUN echo -e 'LANG="en_US.UTF-8"\nLANGUAGE="en_US:en"\n' > /etc/default/locale
+
+RUN echo "service postgresql start" > /startup.sh
+RUN echo "/usr/sbin/sshd -D" >> /startup.sh
+
+CMD ["/bin/bash", "/startup.sh"]
+
+EOL
+	imageName="postgresql-bdr_0.3"
+    containerName="postgresql-bdr"
+    echo "*****************************************************"
+    echo "Building the Image....."
+	docker build -t $imageName . 
+	echo "*****************************************************"
+    echo "Starting the Container...."
+    docker run -d -P  -p  222:22 -p 5432:5432 -p 5433:5433  -v /root:/root -v /etc/shadow:/etc/shadow --name $containerName $imageName
+	docker port $containerName
+}
